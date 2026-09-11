@@ -3,9 +3,13 @@ import type { ApplicantType } from "@/lib/types";
 export type FieldConfig = {
   key: string;
   label: string;
-  type: "text" | "url" | "textarea";
+  type: "text" | "url" | "textarea" | "number";
   required: boolean;
+  min?: number;
+  max?: number;
 };
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 export const APPLICATION_FIELDS: Record<ApplicantType, FieldConfig[]> = {
   hacker: [
@@ -13,8 +17,10 @@ export const APPLICATION_FIELDS: Record<ApplicantType, FieldConfig[]> = {
     {
       key: "graduation_year",
       label: "Graduation year",
-      type: "text",
+      type: "number",
       required: true,
+      min: CURRENT_YEAR,
+      max: CURRENT_YEAR + 8,
     },
     {
       key: "github_url",

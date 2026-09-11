@@ -6,6 +6,7 @@ import {
   type ApplicationFormState,
 } from "@/app/actions/application";
 import { APPLICATION_FIELDS } from "@/lib/application-fields";
+import { Spinner } from "@/components/spinner";
 import type { Application } from "@/lib/types";
 
 export function ApplicationForm({ application }: { application: Application }) {
@@ -17,7 +18,15 @@ export function ApplicationForm({ application }: { application: Application }) {
   const fields = APPLICATION_FIELDS[application.applicant_type];
 
   return (
-    <form action={formAction} className="flex w-full max-w-md flex-col gap-4">
+    <form
+      action={formAction}
+      className="relative flex w-full max-w-md flex-col gap-4"
+    >
+      {pending && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 dark:bg-black/70">
+          <Spinner className="h-8 w-8 text-zinc-500" />
+        </div>
+      )}
       {fields.map((field) => {
         const defaultValue =
           (application.responses[field.key] as string | undefined) ?? "";
@@ -41,7 +50,15 @@ export function ApplicationForm({ application }: { application: Application }) {
               <input
                 id={field.key}
                 name={field.key}
-                type={field.type === "url" ? "url" : "text"}
+                type={
+                  field.type === "url"
+                    ? "url"
+                    : field.type === "number"
+                      ? "number"
+                      : "text"
+                }
+                min={field.type === "number" ? field.min : undefined}
+                max={field.type === "number" ? field.max : undefined}
                 defaultValue={defaultValue}
                 className="h-10 rounded-lg border border-black/[.08] bg-white px-3 dark:border-white/[.145] dark:bg-zinc-950"
               />

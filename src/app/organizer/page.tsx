@@ -7,6 +7,7 @@ import { APPLICATION_FIELDS } from "@/lib/application-fields";
 import { SignOutForm } from "@/components/sign-out-form";
 import { StatusBadge } from "@/components/status-badge";
 import { OrganizerFilters } from "@/components/organizer-filters";
+import { FormPendingOverlay } from "@/components/form-pending-overlay";
 import type {
   ApplicantType,
   ApplicationStatus,
@@ -194,7 +195,8 @@ function ReviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-950">
+      <form className="relative flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-950">
+        <FormPendingOverlay />
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
@@ -236,20 +238,21 @@ function ReviewModal({
 
         <div className="flex flex-wrap gap-2 pt-2">
           {decisions.map(({ status, label }) => (
-            <form
+            <button
               key={status}
-              action={updateApplicationStatus.bind(null, application.id, status)}
+              type="submit"
+              formAction={updateApplicationStatus.bind(
+                null,
+                application.id,
+                status
+              )}
+              className={statusButtonClass(status, application.status)}
             >
-              <button
-                type="submit"
-                className={statusButtonClass(status, application.status)}
-              >
-                {label}
-              </button>
-            </form>
+              {label}
+            </button>
           ))}
         </div>
-      </div>
+      </form>
     </div>
   );
 }
