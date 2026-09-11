@@ -1,6 +1,7 @@
--- Run this once in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
--- Source of truth lives here in the repo; re-run manually after edits until
--- the Supabase CLI is linked to the project.
+-- Already applied to the live project (initial auth/profiles/applications
+-- schema + RLS). Kept as history; don't re-run. New changes go in the next
+-- numbered migration file — run each once in the Supabase SQL Editor until
+-- the CLI is linked.
 
 create type user_role as enum ('applicant', 'organizer');
 create type applicant_type as enum ('hacker', 'judge', 'mentor', 'volunteer');

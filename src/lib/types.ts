@@ -22,6 +22,7 @@ export type Application = {
   applicant_type: ApplicantType;
   status: ApplicationStatus;
   responses: Record<string, unknown>;
+  submitted_at: string | null;
   created_at: string;
   updated_at: string;
 };
