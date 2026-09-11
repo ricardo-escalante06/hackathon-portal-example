@@ -2,16 +2,22 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/dal";
 import { createClient } from "@/lib/supabase/server";
-import { updateApplicationStatus } from "@/app/actions/review";
+import {
+  distributeUnassigned,
+  updateApplicationStatus,
+} from "@/app/actions/review";
 import { APPLICATION_FIELDS } from "@/lib/application-fields";
 import { SignOutForm } from "@/components/sign-out-form";
 import { StatusBadge } from "@/components/status-badge";
 import { OrganizerFilters } from "@/components/organizer-filters";
 import { FormPendingOverlay } from "@/components/form-pending-overlay";
+import { AssigneeSelect } from "@/components/assignee-select";
+import { SubmitButton } from "@/components/submit-button";
 import type {
   ApplicantType,
   ApplicationStatus,
   ApplicationWithApplicant,
+  Organizer,
 } from "@/lib/types";
 
 const APPLICANT_TYPES: ApplicantType[] = [
@@ -49,31 +55,58 @@ export default async function OrganizerPage({
   const params = await searchParams;
   const typeFilter = firstParam(params.type);
   const statusFilter = firstParam(params.status);
+  const assigneeFilter = firstParam(params.assignee);
   const reviewId = firstParam(params.review);
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("applications")
-    .select("*, applicant:profiles(first_name, last_name, email)")
-    .order("created_at", { ascending: true });
+  const [{ data, error }, { data: organizersData, error: organizersError }] =
+    await Promise.all([
+      supabase
+        .from("applications")
+        .select(
+          "*, applicant:profiles!applications_user_id_fkey(first_name, last_name, email), assignee:profiles!applications_assigned_to_fkey(first_name, last_name)"
+        )
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .eq("role", "organizer")
+        .order("created_at", { ascending: true }),
+    ]);
 
   if (error) throw new Error(error.message);
+  if (organizersError) throw new Error(organizersError.message);
 
   const applications = (data ?? []) as unknown as ApplicationWithApplicant[];
+  const organizers = (organizersData ?? []) as Organizer[];
   const pendingCount = applications.filter((a) => a.status === "pending").length;
   const reviewedCount = applications.length - pendingCount;
+  const unassignedCount = applications.filter((a) => !a.assigned_to).length;
 
-  const filtered = applications.filter(
-    (a) =>
-      (!typeFilter || a.applicant_type === typeFilter) &&
-      (!statusFilter || a.status === statusFilter)
-  );
+  const filtered = applications.filter((a) => {
+    if (typeFilter && a.applicant_type !== typeFilter) return false;
+    if (statusFilter && a.status !== statusFilter) return false;
+    if (assigneeFilter === "unassigned" && a.assigned_to) return false;
+    if (assigneeFilter === "me" && a.assigned_to !== profile.id) return false;
+    if (
+      assigneeFilter &&
+      assigneeFilter !== "unassigned" &&
+      assigneeFilter !== "me" &&
+      a.assigned_to !== assigneeFilter
+    )
+      return false;
+    return true;
+  });
 
   const reviewing = reviewId
     ? applications.find((a) => a.id === reviewId)
     : undefined;
 
-  const filterQuery = buildQuery({ type: typeFilter, status: statusFilter });
+  const filterQuery = buildQuery({
+    type: typeFilter,
+    status: statusFilter,
+    assignee: assigneeFilter,
+  });
   const listHref = filterQuery ? `/organizer?${filterQuery}` : "/organizer";
 
   return (
@@ -84,13 +117,30 @@ export default async function OrganizerPage({
             Applications
           </h1>
           <p className="text-sm text-zinc-500">
-            {pendingCount} left to review · {reviewedCount} completed
+            {pendingCount} left to review · {reviewedCount} completed ·{" "}
+            {unassignedCount} unassigned
           </p>
         </div>
-        <SignOutForm />
+        <div className="flex items-center gap-3">
+          {unassignedCount > 0 && (
+            <form action={distributeUnassigned}>
+              <SubmitButton
+                pendingLabel="Distributing..."
+                className="h-10 rounded-lg border border-black/[.08] px-4 text-sm font-medium hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-white/[.06]"
+              >
+                Distribute unassigned
+              </SubmitButton>
+            </form>
+          )}
+          <SignOutForm />
+        </div>
       </div>
 
-      <OrganizerFilters types={APPLICANT_TYPES} statuses={STATUSES} />
+      <OrganizerFilters
+        types={APPLICANT_TYPES}
+        statuses={STATUSES}
+        organizers={organizers}
+      />
 
       <div className="overflow-x-auto rounded-xl border border-black/[.08] bg-white dark:border-white/[.145] dark:bg-zinc-950">
         <table className="w-full text-left text-sm">
@@ -99,6 +149,7 @@ export default async function OrganizerPage({
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Assigned to</th>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3" />
             </tr>
@@ -124,6 +175,13 @@ export default async function OrganizerPage({
                 <td className="px-4 py-3">
                   <StatusBadge status={application.status} />
                 </td>
+                <td className="px-4 py-3">
+                  <AssigneeSelect
+                    applicationId={application.id}
+                    currentAssigneeId={application.assigned_to}
+                    organizers={organizers}
+                  />
+                </td>
                 <td className="px-4 py-3 text-zinc-500">
                   {application.submitted_at
                     ? new Date(application.submitted_at).toLocaleDateString()
@@ -143,7 +201,7 @@ export default async function OrganizerPage({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
                   No applications match these filters.
                 </td>
               </tr>
@@ -218,6 +276,15 @@ function ReviewModal({
           </span>
           <StatusBadge status={application.status} />
         </div>
+
+        <p className="text-sm text-zinc-500">
+          Assigned to:{" "}
+          <span className="font-medium text-black dark:text-zinc-50">
+            {application.assignee
+              ? `${application.assignee.first_name} ${application.assignee.last_name}`
+              : "Unassigned"}
+          </span>
+        </p>
 
         {application.submitted_at ? (
           <div className="flex flex-col gap-3">
