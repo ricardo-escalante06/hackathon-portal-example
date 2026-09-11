@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/dal";
-import { SignOutButton } from "@/components/sign-out-button";
+import { SignOutForm } from "@/components/sign-out-form";
 
 export default async function OrganizerPage() {
   const profile = await getProfile();
@@ -16,7 +16,7 @@ export default async function OrganizerPage() {
         The applications list and review UI aren&apos;t built yet — this page
         confirms the auth + role flow is wired up end to end.
       </p>
-      <SignOutButton />
+      <SignOutForm />
     </div>
   );
 }

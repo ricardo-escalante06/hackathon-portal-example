@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuthUser, resolveDestination } from "@/lib/dal";
-import { SignInButton } from "@/components/sign-in-button";
+import { signInWithGoogle } from "@/app/actions/auth";
 
 export default async function Home() {
   const user = await getAuthUser();
@@ -18,7 +18,14 @@ export default async function Home() {
           Sign in to apply or review applications.
         </p>
       </div>
-      <SignInButton />
+      <form action={signInWithGoogle}>
+        <button
+          type="submit"
+          className="flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-6 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+        >
+          Continue with Google
+        </button>
+      </form>
     </div>
   );
 }
