@@ -124,13 +124,13 @@ export default async function OrganizerPage({
     : listHref;
 
   return (
-    <div className="relative flex flex-1 flex-col gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
-      <div className="flex items-center justify-between">
+    <div className="relative flex flex-1 flex-col gap-6 bg-cream px-6 py-10 dark:bg-navy-950">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+          <h1 className="text-2xl font-extrabold tracking-tight text-navy-950 dark:text-cream">
             Applications
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-navy-950/60 dark:text-cream/60">
             {pendingCount} left to review · {reviewedCount} completed ·{" "}
             {unassignedCount} unassigned
           </p>
@@ -140,7 +140,7 @@ export default async function OrganizerPage({
             <form action={distributeUnassigned}>
               <SubmitButton
                 pendingLabel="Distributing..."
-                className="h-10 rounded-lg border border-black/[.08] px-4 text-sm font-medium hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-white/[.06]"
+                className="h-10 rounded-full border-2 border-apricot bg-apricot/20 px-4 text-sm font-semibold text-apricot-dark transition-colors hover:bg-apricot/30 dark:text-apricot"
               >
                 Distribute unassigned
               </SubmitButton>
@@ -156,9 +156,9 @@ export default async function OrganizerPage({
         organizers={organizers}
       />
 
-      <div className="overflow-x-auto rounded-xl border border-black/[.08] bg-white dark:border-white/[.145] dark:bg-zinc-950">
+      <div className="overflow-x-auto rounded-2xl border border-navy-950/10 bg-white shadow-sm dark:border-white/10 dark:bg-navy-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-black/[.08] text-zinc-500 dark:border-white/[.145]">
+          <thead className="border-b border-navy-950/10 text-xs font-semibold uppercase tracking-wide text-navy-950/50 dark:border-white/10 dark:text-cream/50">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Type</th>
@@ -172,18 +172,18 @@ export default async function OrganizerPage({
             {filtered.map((application) => (
               <tr
                 key={application.id}
-                className="border-b border-black/[.06] last:border-0 dark:border-white/[.08]"
+                className="border-b border-navy-950/5 last:border-0 hover:bg-cream/60 dark:border-white/5 dark:hover:bg-navy-800/40"
               >
                 <td className="px-4 py-3">
-                  <div className="font-medium text-black dark:text-zinc-50">
+                  <div className="font-semibold text-navy-950 dark:text-cream">
                     {application.applicant?.first_name}{" "}
                     {application.applicant?.last_name}
                   </div>
-                  <div className="text-zinc-500">
+                  <div className="text-navy-950/50 dark:text-cream/50">
                     {application.applicant?.email}
                   </div>
                 </td>
-                <td className="px-4 py-3 capitalize">
+                <td className="px-4 py-3 capitalize text-navy-950/80 dark:text-cream/80">
                   {application.applicant_type}
                 </td>
                 <td className="px-4 py-3">
@@ -196,7 +196,7 @@ export default async function OrganizerPage({
                     organizers={organizers}
                   />
                 </td>
-                <td className="px-4 py-3 text-zinc-500">
+                <td className="px-4 py-3 text-navy-950/50 dark:text-cream/50">
                   {application.submitted_at
                     ? new Date(application.submitted_at).toLocaleDateString()
                     : "Not submitted"}
@@ -206,7 +206,7 @@ export default async function OrganizerPage({
                     href={`/organizer?${
                       filterQuery ? `${filterQuery}&` : ""
                     }review=${application.id}`}
-                    className="font-medium underline"
+                    className="font-semibold text-dusty-blue-dark hover:underline dark:text-dusty-blue"
                   >
                     Review
                   </Link>
@@ -215,7 +215,10 @@ export default async function OrganizerPage({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                <td
+                  colSpan={6}
+                  className="px-4 py-8 text-center text-navy-950/50 dark:text-cream/50"
+                >
                   No applications match these filters.
                 </td>
               </tr>
@@ -236,10 +239,10 @@ export default async function OrganizerPage({
 }
 
 const ACTIVE_STATUS_STYLES: Record<ApplicationStatus, string> = {
-  pending: "bg-zinc-500 text-white",
-  accepted: "bg-emerald-500 text-white",
-  rejected: "bg-red-500 text-white",
-  waitlisted: "bg-amber-500 text-white",
+  pending: "bg-lavender-dark text-white",
+  accepted: "bg-sage-dark text-white",
+  rejected: "bg-coral-dark text-white",
+  waitlisted: "bg-apricot-dark text-white",
 };
 
 function statusButtonClass(
@@ -247,11 +250,11 @@ function statusButtonClass(
   current: ApplicationStatus
 ) {
   const base =
-    "h-10 min-w-[110px] flex-1 rounded-lg px-3 text-sm font-medium transition-colors";
+    "h-10 min-w-[110px] flex-1 rounded-full px-3 text-sm font-semibold transition-colors";
   if (status === current) {
     return `${base} ${ACTIVE_STATUS_STYLES[status]}`;
   }
-  return `${base} border border-black/[.08] hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-white/[.06]`;
+  return `${base} border border-navy-950/10 text-navy-950/70 hover:bg-cream dark:border-white/10 dark:text-cream/70 dark:hover:bg-navy-800`;
 }
 
 function ReviewModal({
@@ -276,34 +279,37 @@ function ReviewModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <form className="relative flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-950">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-4">
+      <form className="relative flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-navy-900">
         <FormPendingOverlay />
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+            <h2 className="text-lg font-bold text-navy-950 dark:text-cream">
               {application.applicant?.first_name}{" "}
               {application.applicant?.last_name}
             </h2>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-navy-950/50 dark:text-cream/50">
               {application.applicant?.email}
             </p>
           </div>
-          <Link href={closeHref} className="text-sm text-zinc-500 underline">
+          <Link
+            href={closeHref}
+            className="text-sm text-navy-950/50 underline hover:text-navy-950 dark:text-cream/50 dark:hover:text-cream"
+          >
             Close
           </Link>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm capitalize text-zinc-500">
+          <span className="text-sm capitalize text-navy-950/60 dark:text-cream/60">
             Applying as {application.applicant_type}
           </span>
           <StatusBadge status={application.status} />
         </div>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-navy-950/60 dark:text-cream/60">
           Assigned to:{" "}
-          <span className="font-medium text-black dark:text-zinc-50">
+          <span className="font-semibold text-navy-950 dark:text-cream">
             {application.assignee
               ? `${application.assignee.first_name} ${application.assignee.last_name}`
               : "Unassigned"}
@@ -314,15 +320,17 @@ function ReviewModal({
           <div className="flex flex-col gap-3">
             {fields.map((field) => (
               <div key={field.key} className="flex flex-col gap-0.5 text-sm">
-                <span className="text-zinc-500">{field.label}</span>
-                <span className="whitespace-pre-wrap text-black dark:text-zinc-50">
+                <span className="text-navy-950/50 dark:text-cream/50">
+                  {field.label}
+                </span>
+                <span className="whitespace-pre-wrap text-navy-950 dark:text-cream">
                   {(application.responses[field.key] as string) || "—"}
                 </span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-navy-950/50 dark:text-cream/50">
             This applicant hasn&apos;t submitted their form yet.
           </p>
         )}

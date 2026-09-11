@@ -51,7 +51,7 @@ function AssigneeSelectInner({
             assignApplication(applicationId, next || null);
           });
         }}
-        className="h-9 rounded-lg border border-black/[.08] bg-white px-2 text-sm dark:border-white/[.145] dark:bg-zinc-950"
+        className="h-9 rounded-lg border border-navy-950/10 bg-white px-2 text-sm text-navy-950 outline-none focus:border-dusty-blue dark:border-white/10 dark:bg-navy-900 dark:text-cream"
       >
         <option value="">Unassigned</option>
         {organizers.map((organizer) => (
@@ -60,7 +60,9 @@ function AssigneeSelectInner({
           </option>
         ))}
       </select>
-      {isPending && <Spinner className="h-4 w-4 text-zinc-400" />}
+      {isPending && (
+        <Spinner className="h-4 w-4 text-dusty-blue-dark dark:text-dusty-blue" />
+      )}
     </div>
   );
 }

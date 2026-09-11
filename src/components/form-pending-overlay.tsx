@@ -11,8 +11,8 @@ export function FormPendingOverlay() {
   if (!pending) return null;
 
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 dark:bg-black/70">
-      <Spinner className="h-8 w-8 text-zinc-500" />
+    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/80 dark:bg-navy-900/80">
+      <Spinner className="h-8 w-8 text-navy-950/50 dark:text-cream/50" />
     </div>
   );
 }

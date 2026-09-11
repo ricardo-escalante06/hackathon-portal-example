@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3e9d2;
+  --foreground: #232750;
+}
+
+.dark {
+  --background: #12143a;
+  --foreground: #faf6ee;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-sans);
+  --font-script: var(--font-script);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Dark theme base */
+  --color-navy-950: #12143a;
+  --color-navy-900: #1a1d4d;
+  --color-navy-800: #262a63;
+  --color-navy-700: #363a7a;
+
+  /* Shared pastel accent family, used across both themes */
+  --color-cream: #f3e9d2;
+  --color-sand: #f2e6cd;
+  --color-sage: #aecdac;
+  --color-sage-dark: #6f9873;
+  --color-dusty-blue: #a3c0e0;
+  --color-dusty-blue-dark: #5478a3;
+  --color-coral: #e8ab98;
+  --color-coral-dark: #c06b52;
+  --color-apricot: #f3c98a;
+  --color-apricot-dark: #c9903f;
+  --color-lavender: #cfc9e6;
+  --color-lavender-dark: #8b81b8;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* A faint scattered-dot starfield, shown only in dark mode (see .bg-stars
+   usage on the landing page, which fades it in via dark:opacity-100). */
+.bg-stars {
+  background-image: radial-gradient(
+      circle at 20% 30%,
+      rgba(250, 246, 238, 0.6) 0,
+      rgba(250, 246, 238, 0.6) 1.5px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 70% 15%,
+      rgba(163, 192, 224, 0.5) 0,
+      rgba(163, 192, 224, 0.5) 1.5px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 40% 70%,
+      rgba(243, 201, 138, 0.5) 0,
+      rgba(243, 201, 138, 0.5) 1.5px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 90% 60%,
+      rgba(250, 246, 238, 0.4) 0,
+      rgba(250, 246, 238, 0.4) 1.5px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 55% 40%,
+      rgba(250, 246, 238, 0.45) 0,
+      rgba(250, 246, 238, 0.45) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 10% 85%,
+      rgba(163, 192, 224, 0.4) 0,
+      rgba(163, 192, 224, 0.4) 1px,
+      transparent 1px
+    );
+  background-size:
+    140px 140px,
+    180px 180px,
+    160px 160px,
+    200px 200px,
+    120px 120px,
+    150px 150px;
 }
