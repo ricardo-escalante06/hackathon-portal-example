@@ -20,6 +20,7 @@ export async function setRole(role: UserRole) {
     role,
     first_name: firstName || null,
     last_name: rest.join(" ") || null,
+    email: user.email,
   });
 
   if (error) throw new Error(error.message);
