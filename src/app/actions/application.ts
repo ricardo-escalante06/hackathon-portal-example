@@ -20,6 +20,21 @@ function fieldSchema(field: (typeof APPLICATION_FIELDS)[ApplicantType][number]) 
     return field.required ? schema : schema.optional();
   }
 
+  if (field.type === "number") {
+    let schema = z.coerce.number({ error: `${field.label} must be a number.` });
+    if (field.min !== undefined) {
+      schema = schema.min(field.min, {
+        error: `${field.label} must be ${field.min} or later.`,
+      });
+    }
+    if (field.max !== undefined) {
+      schema = schema.max(field.max, {
+        error: `${field.label} must be ${field.max} or earlier.`,
+      });
+    }
+    return field.required ? schema : schema.optional();
+  }
+
   const schema = z.string();
   return field.required
     ? schema.min(1, { error: `${field.label} is required.` })

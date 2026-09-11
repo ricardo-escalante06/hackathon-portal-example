@@ -2,15 +2,22 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/dal";
 import { createClient } from "@/lib/supabase/server";
-import { updateApplicationStatus } from "@/app/actions/review";
+import {
+  distributeUnassigned,
+  updateApplicationStatus,
+} from "@/app/actions/review";
 import { APPLICATION_FIELDS } from "@/lib/application-fields";
 import { SignOutForm } from "@/components/sign-out-form";
 import { StatusBadge } from "@/components/status-badge";
 import { OrganizerFilters } from "@/components/organizer-filters";
+import { FormPendingOverlay } from "@/components/form-pending-overlay";
+import { AssigneeSelect } from "@/components/assignee-select";
+import { SubmitButton } from "@/components/submit-button";
 import type {
   ApplicantType,
   ApplicationStatus,
   ApplicationWithApplicant,
+  Organizer,
 } from "@/lib/types";
 
 const APPLICANT_TYPES: ApplicantType[] = [
@@ -48,32 +55,73 @@ export default async function OrganizerPage({
   const params = await searchParams;
   const typeFilter = firstParam(params.type);
   const statusFilter = firstParam(params.status);
+  const assigneeFilter = firstParam(params.assignee);
   const reviewId = firstParam(params.review);
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("applications")
-    .select("*, applicant:profiles(first_name, last_name, email)")
-    .order("created_at", { ascending: true });
+  const [{ data, error }, { data: organizersData, error: organizersError }] =
+    await Promise.all([
+      supabase
+        .from("applications")
+        .select(
+          "*, applicant:profiles!applications_user_id_fkey(first_name, last_name, email), assignee:profiles!applications_assigned_to_fkey(first_name, last_name)"
+        )
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .eq("role", "organizer")
+        .order("created_at", { ascending: true }),
+    ]);
 
   if (error) throw new Error(error.message);
+  if (organizersError) throw new Error(organizersError.message);
 
   const applications = (data ?? []) as unknown as ApplicationWithApplicant[];
+  const organizers = (organizersData ?? []) as Organizer[];
   const pendingCount = applications.filter((a) => a.status === "pending").length;
   const reviewedCount = applications.length - pendingCount;
+  const unassignedCount = applications.filter((a) => !a.assigned_to).length;
 
-  const filtered = applications.filter(
-    (a) =>
-      (!typeFilter || a.applicant_type === typeFilter) &&
-      (!statusFilter || a.status === statusFilter)
-  );
+  const filtered = applications.filter((a) => {
+    if (typeFilter && a.applicant_type !== typeFilter) return false;
+    if (statusFilter && a.status !== statusFilter) return false;
+    if (assigneeFilter === "unassigned" && a.assigned_to) return false;
+    if (assigneeFilter === "me" && a.assigned_to !== profile.id) return false;
+    if (
+      assigneeFilter &&
+      assigneeFilter !== "unassigned" &&
+      assigneeFilter !== "me" &&
+      a.assigned_to !== assigneeFilter
+    )
+      return false;
+    return true;
+  });
 
   const reviewing = reviewId
     ? applications.find((a) => a.id === reviewId)
     : undefined;
 
-  const filterQuery = buildQuery({ type: typeFilter, status: statusFilter });
+  const filterQuery = buildQuery({
+    type: typeFilter,
+    status: statusFilter,
+    assignee: assigneeFilter,
+  });
   const listHref = filterQuery ? `/organizer?${filterQuery}` : "/organizer";
+
+  // Where "Accept/Waitlist/Reject" should send you next: the next
+  // still-pending application in the currently filtered/visible list, or
+  // back to the list if you've cleared it.
+  const reviewIndex = reviewing
+    ? filtered.findIndex((a) => a.id === reviewing.id)
+    : -1;
+  const nextPending =
+    reviewIndex >= 0
+      ? filtered.slice(reviewIndex + 1).find((a) => a.status === "pending")
+      : undefined;
+  const nextReviewHref = nextPending
+    ? `/organizer?${filterQuery ? `${filterQuery}&` : ""}review=${nextPending.id}`
+    : listHref;
 
   return (
     <div className="relative flex flex-1 flex-col gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
@@ -83,13 +131,30 @@ export default async function OrganizerPage({
             Applications
           </h1>
           <p className="text-sm text-zinc-500">
-            {pendingCount} left to review · {reviewedCount} completed
+            {pendingCount} left to review · {reviewedCount} completed ·{" "}
+            {unassignedCount} unassigned
           </p>
         </div>
-        <SignOutForm />
+        <div className="flex items-center gap-3">
+          {unassignedCount > 0 && (
+            <form action={distributeUnassigned}>
+              <SubmitButton
+                pendingLabel="Distributing..."
+                className="h-10 rounded-lg border border-black/[.08] px-4 text-sm font-medium hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-white/[.06]"
+              >
+                Distribute unassigned
+              </SubmitButton>
+            </form>
+          )}
+          <SignOutForm />
+        </div>
       </div>
 
-      <OrganizerFilters types={APPLICANT_TYPES} statuses={STATUSES} />
+      <OrganizerFilters
+        types={APPLICANT_TYPES}
+        statuses={STATUSES}
+        organizers={organizers}
+      />
 
       <div className="overflow-x-auto rounded-xl border border-black/[.08] bg-white dark:border-white/[.145] dark:bg-zinc-950">
         <table className="w-full text-left text-sm">
@@ -98,6 +163,7 @@ export default async function OrganizerPage({
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Assigned to</th>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3" />
             </tr>
@@ -123,6 +189,13 @@ export default async function OrganizerPage({
                 <td className="px-4 py-3">
                   <StatusBadge status={application.status} />
                 </td>
+                <td className="px-4 py-3">
+                  <AssigneeSelect
+                    applicationId={application.id}
+                    currentAssigneeId={application.assigned_to}
+                    organizers={organizers}
+                  />
+                </td>
                 <td className="px-4 py-3 text-zinc-500">
                   {application.submitted_at
                     ? new Date(application.submitted_at).toLocaleDateString()
@@ -142,7 +215,7 @@ export default async function OrganizerPage({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
                   No applications match these filters.
                 </td>
               </tr>
@@ -152,7 +225,11 @@ export default async function OrganizerPage({
       </div>
 
       {reviewing && (
-        <ReviewModal application={reviewing} closeHref={listHref} />
+        <ReviewModal
+          application={reviewing}
+          closeHref={listHref}
+          nextReviewHref={nextReviewHref}
+        />
       )}
     </div>
   );
@@ -180,21 +257,28 @@ function statusButtonClass(
 function ReviewModal({
   application,
   closeHref,
+  nextReviewHref,
 }: {
   application: ApplicationWithApplicant;
   closeHref: string;
+  nextReviewHref: string;
 }) {
   const fields = APPLICATION_FIELDS[application.applicant_type];
-  const decisions: { status: ApplicationStatus; label: string }[] = [
-    { status: "accepted", label: "Accept" },
-    { status: "waitlisted", label: "Waitlist" },
-    { status: "rejected", label: "Reject" },
-    { status: "pending", label: "Reset to pending" },
+  const decisions: {
+    status: ApplicationStatus;
+    label: string;
+    advance: boolean;
+  }[] = [
+    { status: "accepted", label: "Accept", advance: true },
+    { status: "waitlisted", label: "Waitlist", advance: true },
+    { status: "rejected", label: "Reject", advance: true },
+    { status: "pending", label: "Reset to pending", advance: false },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-950">
+      <form className="relative flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-950">
+        <FormPendingOverlay />
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
@@ -217,6 +301,15 @@ function ReviewModal({
           <StatusBadge status={application.status} />
         </div>
 
+        <p className="text-sm text-zinc-500">
+          Assigned to:{" "}
+          <span className="font-medium text-black dark:text-zinc-50">
+            {application.assignee
+              ? `${application.assignee.first_name} ${application.assignee.last_name}`
+              : "Unassigned"}
+          </span>
+        </p>
+
         {application.submitted_at ? (
           <div className="flex flex-col gap-3">
             {fields.map((field) => (
@@ -235,21 +328,23 @@ function ReviewModal({
         )}
 
         <div className="flex flex-wrap gap-2 pt-2">
-          {decisions.map(({ status, label }) => (
-            <form
+          {decisions.map(({ status, label, advance }) => (
+            <button
               key={status}
-              action={updateApplicationStatus.bind(null, application.id, status)}
+              type="submit"
+              formAction={updateApplicationStatus.bind(
+                null,
+                application.id,
+                status,
+                advance ? nextReviewHref : null
+              )}
+              className={statusButtonClass(status, application.status)}
             >
-              <button
-                type="submit"
-                className={statusButtonClass(status, application.status)}
-              >
-                {label}
-              </button>
-            </form>
+              {label}
+            </button>
           ))}
         </div>
-      </div>
+      </form>
     </div>
   );
 }

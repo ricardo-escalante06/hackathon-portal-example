@@ -24,10 +24,14 @@ export type Application = {
   status: ApplicationStatus;
   responses: Record<string, unknown>;
   submitted_at: string | null;
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
 };
 
+export type Organizer = Pick<Profile, "id" | "first_name" | "last_name">;
+
 export type ApplicationWithApplicant = Application & {
   applicant: Pick<Profile, "first_name" | "last_name" | "email"> | null;
+  assignee: Pick<Profile, "first_name" | "last_name"> | null;
 };
