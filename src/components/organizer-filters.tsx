@@ -57,12 +57,12 @@ export function OrganizerFilters({
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-navy-950/70 dark:text-cream/70">
         Type
         <select
           value={searchParams.get("type") ?? ""}
           onChange={(event) => setParam("type", event.target.value)}
-          className="h-10 rounded-lg border border-black/[.08] bg-white px-2 dark:border-white/[.145] dark:bg-zinc-950"
+          className="h-10 rounded-lg border border-navy-950/10 bg-white px-2 text-navy-950 outline-none focus:border-dusty-blue dark:border-white/10 dark:bg-navy-900 dark:text-cream"
         >
           <option value="">All</option>
           {types.map((type) => (
@@ -72,12 +72,12 @@ export function OrganizerFilters({
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-navy-950/70 dark:text-cream/70">
         Status
         <select
           value={searchParams.get("status") ?? ""}
           onChange={(event) => setParam("status", event.target.value)}
-          className="h-10 rounded-lg border border-black/[.08] bg-white px-2 dark:border-white/[.145] dark:bg-zinc-950"
+          className="h-10 rounded-lg border border-navy-950/10 bg-white px-2 text-navy-950 outline-none focus:border-dusty-blue dark:border-white/10 dark:bg-navy-900 dark:text-cream"
         >
           <option value="">All</option>
           {statuses.map((status) => (
@@ -87,7 +87,7 @@ export function OrganizerFilters({
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-navy-950/70 dark:text-cream/70">
         Assigned to
         <select
           value={mode}
@@ -100,7 +100,7 @@ export function OrganizerFilters({
               setParam("assignee", next);
             }
           }}
-          className="h-10 rounded-lg border border-black/[.08] bg-white px-2 dark:border-white/[.145] dark:bg-zinc-950"
+          className="h-10 rounded-lg border border-navy-950/10 bg-white px-2 text-navy-950 outline-none focus:border-dusty-blue dark:border-white/10 dark:bg-navy-900 dark:text-cream"
         >
           <option value="">All</option>
           <option value="me">Assigned to me</option>
@@ -109,7 +109,7 @@ export function OrganizerFilters({
         </select>
       </label>
       {mode === "individual" && (
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm font-medium text-navy-950/70 dark:text-cream/70">
           Search organizer
           <input
             list="organizer-options"
@@ -125,7 +125,7 @@ export function OrganizerFilters({
               );
               if (match) setParam("assignee", match.id);
             }}
-            className="h-10 rounded-lg border border-black/[.08] bg-white px-3 dark:border-white/[.145] dark:bg-zinc-950"
+            className="h-10 rounded-lg border border-navy-950/10 bg-white px-3 text-navy-950 outline-none focus:border-dusty-blue dark:border-white/10 dark:bg-navy-900 dark:text-cream"
           />
           <datalist id="organizer-options">
             {organizers.map((organizer) => (

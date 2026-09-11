@@ -5,7 +5,7 @@ export function SignOutForm() {
     <form action={signOut}>
       <button
         type="submit"
-        className="text-sm text-zinc-500 underline hover:text-zinc-800 dark:hover:text-zinc-200"
+        className="text-sm text-navy-950/50 underline hover:text-navy-950 dark:text-cream/50 dark:hover:text-cream"
       >
         Sign out
       </button>
