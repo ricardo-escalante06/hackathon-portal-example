@@ -109,6 +109,20 @@ export default async function OrganizerPage({
   });
   const listHref = filterQuery ? `/organizer?${filterQuery}` : "/organizer";
 
+  // Where "Accept/Waitlist/Reject" should send you next: the next
+  // still-pending application in the currently filtered/visible list, or
+  // back to the list if you've cleared it.
+  const reviewIndex = reviewing
+    ? filtered.findIndex((a) => a.id === reviewing.id)
+    : -1;
+  const nextPending =
+    reviewIndex >= 0
+      ? filtered.slice(reviewIndex + 1).find((a) => a.status === "pending")
+      : undefined;
+  const nextReviewHref = nextPending
+    ? `/organizer?${filterQuery ? `${filterQuery}&` : ""}review=${nextPending.id}`
+    : listHref;
+
   return (
     <div className="relative flex flex-1 flex-col gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
       <div className="flex items-center justify-between">
@@ -211,7 +225,11 @@ export default async function OrganizerPage({
       </div>
 
       {reviewing && (
-        <ReviewModal application={reviewing} closeHref={listHref} />
+        <ReviewModal
+          application={reviewing}
+          closeHref={listHref}
+          nextReviewHref={nextReviewHref}
+        />
       )}
     </div>
   );
@@ -239,16 +257,22 @@ function statusButtonClass(
 function ReviewModal({
   application,
   closeHref,
+  nextReviewHref,
 }: {
   application: ApplicationWithApplicant;
   closeHref: string;
+  nextReviewHref: string;
 }) {
   const fields = APPLICATION_FIELDS[application.applicant_type];
-  const decisions: { status: ApplicationStatus; label: string }[] = [
-    { status: "accepted", label: "Accept" },
-    { status: "waitlisted", label: "Waitlist" },
-    { status: "rejected", label: "Reject" },
-    { status: "pending", label: "Reset to pending" },
+  const decisions: {
+    status: ApplicationStatus;
+    label: string;
+    advance: boolean;
+  }[] = [
+    { status: "accepted", label: "Accept", advance: true },
+    { status: "waitlisted", label: "Waitlist", advance: true },
+    { status: "rejected", label: "Reject", advance: true },
+    { status: "pending", label: "Reset to pending", advance: false },
   ];
 
   return (
@@ -304,14 +328,15 @@ function ReviewModal({
         )}
 
         <div className="flex flex-wrap gap-2 pt-2">
-          {decisions.map(({ status, label }) => (
+          {decisions.map(({ status, label, advance }) => (
             <button
               key={status}
               type="submit"
               formAction={updateApplicationStatus.bind(
                 null,
                 application.id,
-                status
+                status,
+                advance ? nextReviewHref : null
               )}
               className={statusButtonClass(status, application.status)}
             >

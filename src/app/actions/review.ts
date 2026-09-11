@@ -1,15 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ApplicationStatus } from "@/lib/types";
 
 // Authorization is enforced by RLS (applications_update_as_organizer, via
 // is_organizer()) — requireUser() here just ensures there's a session at all.
+//
+// redirectTo lets the caller advance straight to the next application to
+// review (or close the modal) after a decision, instead of staying put —
+// pass null to just update in place (used for "reset to pending", which
+// isn't really "finishing" a review).
 export async function updateApplicationStatus(
   applicationId: string,
-  status: ApplicationStatus
+  status: ApplicationStatus,
+  redirectTo: string | null
 ) {
   await requireUser();
   const supabase = await createClient();
@@ -22,6 +29,7 @@ export async function updateApplicationStatus(
   if (error) throw new Error(error.message);
 
   revalidatePath("/organizer");
+  if (redirectTo) redirect(redirectTo);
 }
 
 export async function assignApplication(
